@@ -28,6 +28,7 @@ create unique index IndexIngrediente on Ingredienti(codice); --superfluo perché 
 create procedure PizzIngr @Pizza varchar(20), @Ingrediente varchar(20)
 as
 begin
+begin try
 declare @idP int
 select @idP=codice
 from Pizza
@@ -37,30 +38,54 @@ select @idI=codice
 from Ingredienti
 where nome like @Ingrediente
 insert into IngredientiPizza values(@idP, @idI, 1)
+end try
+begin catch
+select ERROR_LINE(), ERROR_MESSAGE(), ERROR_SEVERITY()
+end catch
 end
 
 create procedure Ingredienti @Nome varchar(20), @costo float, @numScorte int
 as
 begin
+begin try
 insert into Ingredienti values (@Nome, @costo, @numScorte)
+end try
+begin catch
+select ERROR_LINE(), ERROR_MESSAGE(), ERROR_SEVERITY()
+end catch
 end
 
 create procedure Pizza @Nome varchar(20), @costo float
 as
 begin
+begin try
 insert into Pizza values (@Nome, @costo)
+end try
+begin catch
+select ERROR_LINE(), ERROR_MESSAGE(), ERROR_SEVERITY()
+end catch
 end
 
 create procedure TogliIngredientePizza @idP int, @idI int
 as
 begin
+begin try
 delete from IngredientiPizza where codicePizza=@idP and codiceIngredienti=@idI
+end try
+begin catch
+select ERROR_LINE(), ERROR_MESSAGE(), ERROR_SEVERITY()
+end catch
 end
 
 create procedure IncrementoPrezzo @idI int
 as
 begin
+begin try
 update Pizza set prezzo=prezzo+prezzo*0.1 from IngredientiPizza where codicePizza=Pizza.codice and codiceIngredienti=@idI
+end try
+begin catch
+select ERROR_LINE(), ERROR_MESSAGE(), ERROR_SEVERITY()
+end catch
 end
 
 --__________________funcs______________
@@ -191,6 +216,14 @@ exec [dbo].[PizzIngr] @Pizza='Zeus', @Ingrediente='rucola'
 
 --____________view______________
 create view Menu as (
-select pizza.nome, pizza.prezzo, Ingredienti.nome
-from Pizza join IngredientiPizza on Pizza.codice=IngredientiPizza.codicePizza join Ingredienti on IngredientiPizza.codiceIngredienti=Ingredienti.codice
+--select pizza.nome, pizza.prezzo, Ingredienti.nome
+--from Pizza join IngredientiPizza on Pizza.codice=IngredientiPizza.codicePizza join Ingredienti on IngredientiPizza.codiceIngredienti=Ingredienti.codice
+
+select *
+from Pizza join (
+	select codicePizza, Ingredienti.nome 
+	from IngredientiPizza join Ingredienti 
+	on IngredientiPizza.codiceIngredienti=codice
+	)
+as res on codice=res.codicePizza
 ) 
